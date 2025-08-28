@@ -1,0 +1,9 @@
+{
+  "keypair_path": "~/.config/solana/execai.json",
+  "governance_program_id": "YOUR_GOVERNANCE_PROGRAM_ID_HERE",
+  "membership_program_id": "YOUR_MEMBERSHIP_PROGRAM_ID_HERE",
+  "poll_interval": 60,
+  "network": "devnet",
+  "rpc_url": "https://api.devnet.solana.com"
+}
+

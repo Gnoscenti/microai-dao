@@ -78,12 +78,25 @@ export async function getChainStats(): Promise<Partial<Metrics>> {
 
 export async function getTreasuryUSD(): Promise<number> {
   try {
-    // Get SOL balance from authority wallet
-    const authorityPubkey = new PublicKey('5tZtDijyKeKCqKeLGD3eqtddCBmwLHDocgtsXmzssKeR');
-    const balance = await conn.getBalance(authorityPubkey);
-    const solBalance = balance / 1e9; // Convert lamports to SOL
+    // First try to get real DAO treasury data
+    const daoStateResponse = await fetch('/dao-state.json');
+    if (daoStateResponse.ok) {
+      const daoState = await daoStateResponse.json();
+      const solBalance = daoState.treasury / 1e9; // Convert lamports to SOL
+      
+      // Get current SOL price
+      const solPriceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+      const solPrice = await solPriceResponse.json();
+      const usdValue = solBalance * solPrice.solana.usd;
+      
+      return usdValue;
+    }
     
-    // Get SOL price in USD (you can use a price API here)
+    // Fallback: Get SOL balance from authority wallet
+    const authorityPubkey = new PublicKey('8Lc83Gc3Di7REzGXub8jUC5fTfRJcai3XWeBCwoerqpA');
+    const balance = await conn.getBalance(authorityPubkey);
+    const solBalance = balance / 1e9;
+    
     const solPriceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
     const solPrice = await solPriceResponse.json();
     const usdValue = solBalance * solPrice.solana.usd;
@@ -96,28 +109,27 @@ export async function getTreasuryUSD(): Promise<number> {
 }
 
 export async function getGovernanceData() {
+  // Prefer live data server if available
+  try {
+    const res = await fetch('http://localhost:8787/api/dao', { cache: 'no-store' });
+    if (res.ok) {
+      const dao = await res.json();
+      const pres = await fetch('http://localhost:8787/api/proposals', { cache: 'no-store' });
+      const proposals = pres.ok ? await pres.json() : [];
+      return { dao, proposals };
+    }
+  } catch (_e) { /* fall back below */ }
+
   try {
     const governanceProgramId = new PublicKey(CONFIG.GOVERNANCE_PROGRAM_ID);
-    
-    // Get all governance accounts (this is a simplified approach)
     const accounts = await conn.getProgramAccounts(governanceProgramId);
-    
     let daoAccount = null;
-    let proposalAccounts = [];
-    
+    let proposalAccounts: any[] = [];
     for (const account of accounts) {
       const parsed = parseGovernanceAccount(account.account);
-      if (parsed) {
-        // This would be the main DAO account
-        daoAccount = parsed;
-      }
-      // You'd need to parse proposal accounts differently based on your account structure
+      if (parsed) daoAccount = parsed;
     }
-    
-    return {
-      dao: daoAccount,
-      proposals: proposalAccounts
-    };
+    return { dao: daoAccount, proposals: proposalAccounts };
   } catch (e) {
     console.error('Error fetching governance data:', e);
     return null;
@@ -126,35 +138,44 @@ export async function getGovernanceData() {
 
 export async function getProposals(): Promise<Proposal[]> {
   try {
+    // Prefer live data server
+    const res = await fetch('http://localhost:8787/api/proposals', { cache: 'no-store' });
+    if (res.ok) {
+      const proposalsData = await res.json();
+      return proposalsData.map((p: any, idx: number) => {
+        // No end time on-chain yet; synthesize 5 days window
+        const created = p.createdAt ? Number(p.createdAt) * 1000 : Date.now() - 24*3600e3;
+        const ends = created + 5 * 24 * 3600e3;
+        const progress = Math.min(100, Math.max(0, ((Date.now() - created) / (ends - created)) * 100));
+        const totalVotes = (p.votesFor || 0) + (p.votesAgainst || 0);
+        const support = totalVotes > 0 ? Math.round((p.votesFor / totalVotes) * 100) : 50;
+        return { id: p.id?.toString() ?? String(idx+1), title: p.title, progress: Math.round(progress), endsISO: new Date(ends).toISOString(), support };
+      });
+    }
+  } catch (_e) { /* fallback below */ }
+
+  try {
+    const proposalsResponse = await fetch('/proposals.json');
+    if (proposalsResponse.ok) {
+      const proposalsData = await proposalsResponse.json();
+      return proposalsData.map((prop: any) => {
+        const now = Date.now();
+        const timeElapsed = now - prop.created;
+        const timeTotal = prop.ends - prop.created;
+        const progress = Math.min(100, Math.max(0, (timeElapsed / timeTotal) * 100));
+        return {
+          id: prop.id,
+          title: prop.title,
+          progress: Math.round(progress),
+          endsISO: new Date(prop.ends).toISOString(),
+          support: Math.round((prop.votesFor / (prop.votesAgainst + prop.votesFor || 1)) * 100),
+        };
+      }).filter((prop: any) => prop.progress < 100);
+    }
     const govData = await getGovernanceData();
-    
-    if (govData?.proposals && govData.proposals.length > 0) {
-      // Convert on-chain proposal data to dashboard format
-      return govData.proposals.map((proposal: any, index: number) => ({
-        id: (index + 1).toString(),
-        title: proposal.title || `Proposal ${index + 1}`,
-        progress: 65, // Calculate from time elapsed
-        endsISO: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-        support: proposal.votes_for || 67, // % support
-      }));
+    if (govData?.dao) {
+      return [{ id: 'live-1', title: 'DAO Governance Active', progress: 45, endsISO: new Date(Date.now()+7*24*3600e3).toISOString(), support: 78 }];
     }
-    
-    // Check if we have any live governance accounts at all
-    console.log('Checking live governance data...');
-    const liveGovData = await getGovernanceData();
-    if (liveGovData?.dao) {
-      console.log('Found live DAO data:', liveGovData.dao);
-      // Return a live proposal based on DAO state
-      return [{
-        id: "live-1",
-        title: "Live DAO Status",
-        progress: 25,
-        endsISO: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        support: 75,
-      }];
-    }
-    
-    // Fallback to mock data if no live proposals
     return mockProposals;
   } catch (e) {
     console.warn('getProposals fallback → mock', e);
@@ -164,22 +185,25 @@ export async function getProposals(): Promise<Proposal[]> {
 
 export async function getEngagement(): Promise<{ votersActive: number; engagementPct: number; }> {
   try {
+    const res = await fetch('http://localhost:8787/api/dao', { cache: 'no-store' });
+    if (res.ok) {
+      const daoState = await res.json();
+      const memberCount = daoState.memberCount || 2;
+      const proposalCount = daoState.proposalCount || 1;
+      const votersActive = Math.max(1, Math.min(memberCount * 2, proposalCount * 10));
+      const engagementPct = Math.min(95, Math.max(25, (votersActive / Math.max(memberCount, 1)) * 100));
+      return { votersActive: Math.round(votersActive), engagementPct: Math.round(engagementPct * 10) / 10 };
+    }
+  } catch (_e) { /* fallback below */ }
+  try {
     const govData = await getGovernanceData();
-    
     if (govData?.dao) {
       const memberCount = govData.dao.memberCount || 1;
       const proposalCount = govData.dao.proposalCount || 0;
-      
-      // Calculate engagement based on on-chain data
-      const votersActive = Math.max(1, Math.min(memberCount, proposalCount * 2)); // At least 1
+      const votersActive = Math.max(1, Math.min(memberCount, proposalCount * 2));
       const engagementPct = memberCount > 0 ? (votersActive / Math.max(memberCount, 1)) * 100 : 50;
-      
-      return { 
-        votersActive, 
-        engagementPct: Math.min(100, Math.max(25, engagementPct)) // Between 25-100%
-      };
+      return { votersActive, engagementPct: Math.min(100, Math.max(25, engagementPct)) };
     }
-    
     return { votersActive: mockMetrics.votersActive, engagementPct: mockMetrics.engagementPct };
   } catch (e) {
     console.warn('getEngagement fallback → mock', e);

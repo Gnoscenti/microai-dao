@@ -112,10 +112,10 @@ log "Configuring Solana..."
 solana config set --url https://api.devnet.solana.com
 solana config set --keypair ~/.config/solana/id.json
 
-# Install Python dependencies
-log "Installing Python dependencies..."
-pip3 install --user --upgrade pip
-pip3 install --user solana anchorpy openai requests pandas numpy beautifulsoup4 selenium webdriver-manager schedule flask stripe
+# Install Python dependencies (persistent, no venv)
+log "Installing Python dependencies (persistent, no venv)..."
+PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install --user --upgrade pip
+PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install --user solana anchorpy openai requests pandas numpy beautifulsoup4 selenium webdriver-manager schedule flask stripe google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow opencv-python moviepy pydub python-dotenv
 
 # Generate smart contract code
 log "Generating smart contract code..."

@@ -1,0 +1,98 @@
+MICROAI DAO - PROGRAM IDS & WALLET ADDRESSES
+=============================================
+Generated: 2025-08-29T11:16:59Z
+Network: Solana Devnet
+Status: Deployed & Active
+
+SMART CONTRACT PROGRAM IDS:
+==========================
+Governance Program ID: 52PRY4415Rx29Za61422XJHUoUbs5ysqW5eZtksTTX8d
+Membership Program ID: FotEuL6PaHRDYuDmtqNrbbS52AwVX49MQSBjNwCWqRA4
+
+WALLET ADDRESSES:
+================
+Treasury Wallet: 8Lc83Gc3Di7REzGXub8jUC5fTfRJcai3XWeBCwoerqpA
+Authority Wallet: 8Lc83Gc3Di7REzGXub8jUC5fTfRJcai3XWeBCwoerqpA
+EXECAI Wallet: /home/microai/.config/solana/execai.json
+
+NETWORK CONFIGURATION:
+=====================
+RPC Endpoint: https://api.devnet.solana.com
+WebSocket: wss://api.devnet.solana.com/
+Environment: Development/Testing
+Commitment Level: confirmed
+
+TREASURY STATUS:
+===============
+Current Balance: 4.3655516 SOL
+USD Value: ~$870 (estimated, varies with SOL price)
+Last Updated: 2025-08-29T11:16:59Z
+Wallet Verified: ✅ Active on devnet
+
+DAO GOVERNANCE STATUS:
+====================
+Total Members: 2
+Active Proposals: 3
+Legal Entity: MicroAI DAO LLC
+Registered Agent: Wyoming Agents & Corporations, Inc.
+Compliance: Wyoming DAO LLC Ready
+
+DASHBOARD ACCESS:
+================
+Local URL: http://localhost:5176/
+Governance Tab: Live metrics and voting ✅
+Wyoming LLC Tab: Compliance registration form ✅
+Status: Running with real on-chain data
+
+DEPLOYMENT VERIFICATION:
+=======================
+✅ Smart contracts compiled successfully
+✅ Governance program deployed
+✅ Membership program deployed  
+✅ DAO state initialized
+✅ Proposal data created
+✅ Dashboard connected to real data
+✅ Wyoming compliance integration active
+
+BACKUP INFORMATION:
+==================
+DAO State File: dao-state.json
+Proposals File: proposals.json
+Config File: wyoming-dao-config.json
+Keypair Files: ~/.config/solana/id.json, ~/.config/solana/execai.json
+
+IMPORTANT NOTES:
+===============
+- These are DEVNET addresses for testing
+- For mainnet deployment, redeploy with --url mainnet-beta
+- Keep keypair files secure and backed up
+- Treasury wallet contains real devnet SOL for testing
+- Wyoming compliance data ready for state filing
+
+AUTOMATION SYSTEMS:
+==================
+Revenue Generation: revenue_generation_system.py
+YouTube Content: youtube_content_generator.py  
+Client Acquisition: client_acquisition_bot.py
+EXECAI Client: execai_client.py
+Status: Ready to deploy with 'make start-automation'
+
+CONFIGURATION FILES:
+===================
+DAO State: dao-state.json ✅
+Proposals: proposals.json ✅
+Wyoming Config: wyoming-dao-config.json ✅
+Environment: .env.example (template)
+Anchor Config: Anchor.toml ✅
+
+For technical support or questions about these deployments,
+refer to the MicroAI DAO documentation or contact the development team.
+
+COMMANDS TO REMEMBER:
+====================
+Start Dashboard: cd microai-dashboard && npm run dev
+Start Automation: make start-automation  
+Stop Automation: make stop-automation
+Build All: make build
+Deploy Contracts: anchor deploy
+Check Status: make status

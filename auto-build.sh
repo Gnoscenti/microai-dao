@@ -126,24 +126,11 @@ build_dashboard() {
     log "✅ Dashboard build complete"
 }
 
-# Function to setup Python environment
+# Function to setup Python environment (persistent, no venv)
 setup_python_env() {
-    log "Setting up Python environment..."
-    
-    # Check if virtual environment exists
-    if [ ! -d "venv" ]; then
-        log "Creating Python virtual environment..."
-        python3 -m venv venv || error "Failed to create virtual environment"
-    fi
-    
-    # Activate virtual environment
-    source venv/bin/activate
-    
-    # Install Python dependencies
-    log "Installing Python dependencies..."
-    pip install --upgrade pip
-    pip install solana anchorpy openai requests pandas numpy beautifulsoup4 selenium webdriver-manager schedule flask stripe || warn "Some Python packages failed to install"
-    
+    log "Setting up Python environment (persistent, no venv)..."
+    PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --user --upgrade pip || warn "Could not upgrade pip"
+    PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --user solana anchorpy openai requests pandas numpy beautifulsoup4 selenium webdriver-manager schedule flask stripe google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow opencv-python moviepy pydub python-dotenv || warn "Some Python packages failed to install"
     log "✅ Python environment setup complete"
 }
 
@@ -165,12 +152,17 @@ validate_build() {
         warn "Dashboard build output not found"
     fi
     
-    # Check if Python environment is ready
-    if [ -d "venv" ]; then
-        log "✅ Python environment ready"
-    else
-        warn "Python environment not found"
-    fi
+    # Check if Python environment is ready by importing key modules
+    python3 - <<'EOF'
+mods = ["solana","anchorpy","openai","requests","pandas","numpy","bs4","selenium","webdriver_manager","schedule","flask","stripe"]
+missing = []
+for m in mods:
+    try:
+        __import__(m)
+    except Exception:
+        missing.append(m)
+print("✅ Python environment ready" if not missing else f"⚠️  Missing Python packages: {', '.join(missing)}")
+EOF
 }
 
 # Function to deploy (if requested)

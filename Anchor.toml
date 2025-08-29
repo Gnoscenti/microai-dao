@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-governance = "GwTF9DgiBrj8ezeJQNdubiTb4s3xmmXybHPCy3xgoHyJ"
+governance = "6amHFyNoPK9MmbBKqthLMeoxTB4TV7CdVE5K4RXi1eDC"
 membership = "FotEuL6PaHRDYuDmtqNrbbS52AwVX49MQSBjNwCWqRA4"
 
 [registry]
@@ -13,7 +13,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
-wallet = "~/.config/solana/execai.json"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

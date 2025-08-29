@@ -42,13 +42,12 @@ clean:
 
 # Install dependencies
 install:
-	@echo "📦 Installing dependencies..."
+	@echo "📦 Installing dependencies (persistent, no venv)..."
 	@if [ ! -d "microai-dashboard/node_modules" ]; then \
 		cd microai-dashboard && npm install; \
 	fi
-	@if [ ! -d "venv" ]; then \
-		python3 -m venv venv && source venv/bin/activate && pip install --upgrade pip; \
-	fi
+	@PIP_BREAK_SYSTEM_PACKAGES=1 /usr/bin/python3 -m pip install --user --upgrade pip
+	@PIP_BREAK_SYSTEM_PACKAGES=1 /usr/bin/python3 -m pip install --user solana anchorpy openai requests pandas numpy beautifulsoup4 selenium webdriver-manager schedule flask stripe google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow opencv-python moviepy pydub python-dotenv
 
 # Setup complete environment
 setup:
@@ -95,13 +94,11 @@ dashboard:
 	@echo "⚛️ Building React dashboard..."
 	@cd microai-dashboard && npm install && npm run build
 
-# Setup only Python environment
+# Setup only Python environment (persistent, no venv)
 python:
-	@echo "🐍 Setting up Python environment..."
-	@if [ ! -d "venv" ]; then \
-		python3 -m venv venv; \
-	fi
-	@bash -c "source venv/bin/activate && pip install --upgrade pip && pip install solana anchorpy openai requests pandas numpy beautifulsoup4 selenium webdriver-manager schedule flask stripe"
+	@echo "🐍 Setting up Python environment (persistent, no venv)..."
+	@PIP_BREAK_SYSTEM_PACKAGES=1 /usr/bin/python3 -m pip install --user --upgrade pip
+	@PIP_BREAK_SYSTEM_PACKAGES=1 /usr/bin/python3 -m pip install --user solana anchorpy openai requests pandas numpy beautifulsoup4 selenium webdriver-manager schedule flask stripe google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow opencv-python moviepy pydub python-dotenv
 
 # Development mode - start dashboard dev server
 dev:
@@ -125,7 +122,7 @@ status:
 	@echo "Build artifacts:"
 	@if [ -f "target/deploy/microai_governance.so" ]; then echo "✅ Smart contracts built"; else echo "❌ Smart contracts not built"; fi
 	@if [ -f "microai-dashboard/dist/index.html" ]; then echo "✅ Dashboard built"; else echo "❌ Dashboard not built"; fi
-	@if [ -d "venv" ]; then echo "✅ Python environment ready"; else echo "❌ Python environment not setup"; fi
+	@python3 -c "import pkgutil;mods=['solana','anchorpy','openai','requests','pandas','numpy','bs4','selenium','webdriver_manager','schedule','flask','stripe'];missing=[m for m in mods if pkgutil.find_loader(m) is None];print('✅ Python environment ready' if not missing else '❌ Missing Python packages: '+', '.join(missing))"
 
 # Solana-specific commands
 solana-setup:
@@ -141,11 +138,10 @@ solana-setup:
 	@echo "🪙 Getting test SOL..."
 	@solana airdrop 2
 
-# Start all automation systems
+# Start all automation systems (no venv)
 start-automation:
-	@echo "🤖 Starting automation systems..."
-	@source venv/bin/activate && \
-		python3 revenue_generation_system.py --auto & \
+	@echo "🤖 Starting automation systems (persistent env, no venv)..."
+	@python3 revenue_generation_system.py --auto & \
 		python3 youtube_content_generator.py --auto & \
 		python3 client_acquisition_bot.py --auto & \
 		python3 execai_client.py &

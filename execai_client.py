@@ -11,7 +11,15 @@ import json
 import base64
 import subprocess
 import time
+import json
+import requests
 from typing import Optional, Dict, Any, List, Tuple
+
+from solana.rpc.api import Client
+from solana.publickey import PublicKey
+from solana.keypair import Keypair
+from solana.transaction import Transaction, TransactionInstruction, AccountMeta
+from solana.system_program import SYS_PROGRAM_ID
 
 class ExecAIClient:
     """Client for EXECAI to interact with MicroAI DAO LLC governance"""
@@ -29,17 +37,18 @@ class ExecAIClient:
         self.membership_program_id = membership_program_id
     
     def get_proposals(self) -> List[Dict[str, Any]]:
-        """Get all active proposals
-        
-        Returns:
-            List of proposal data
-        """
-        # In a real implementation, this would query the blockchain
-        # For now, we'll simulate by reading from a local file
+        """Get all active proposals from live data API"""
+        try:
+            r = requests.get("http://localhost:8787/api/proposals", timeout=5)
+            if r.ok:
+                return r.json()
+        except Exception:
+            pass
+        # Fallback to local cache if API unavailable
         try:
             with open("proposals.json", "r") as f:
                 return json.load(f)
-        except FileNotFoundError:
+        except Exception:
             return []
     
     def evaluate_proposal(self, proposal: Dict[str, Any]) -> bool:
@@ -74,37 +83,44 @@ class ExecAIClient:
         # For simplicity, we'll return False
         return False
     
-    def vote_on_proposal(self, proposal_id: str, approve: bool) -> bool:
-        """Submit a vote on a proposal
-        
-        Args:
-            proposal_id: ID of the proposal
-            approve: True to approve, False to reject
-            
-        Returns:
-            True if vote was submitted successfully
-        """
-        # In a real implementation, this would submit a transaction to the blockchain
-        # For now, we'll simulate by printing the vote
-        vote_type = "APPROVE" if approve else "REJECT"
-        print(f"EXECAI voting {vote_type} on proposal {proposal_id}")
-        
-        # Simulate transaction submission
-        cmd = [
-            "solana", "program", "call",
-            "--keypair", self.keypair_path,
-            self.governance_program_id,
-            "vote",
-            proposal_id,
-            "true" if approve else "false"
-        ]
-        
-        # In a real implementation, we would execute this command
-        # For now, we'll just print it
-        print(f"Command: {' '.join(cmd)}")
-        
-        # Simulate success
-        return True
+    def vote_on_proposal(self, proposal: Dict[str, Any], approve: bool) -> bool:
+        """Submit a vote on a proposal on-chain"""
+        try:
+            vote_type = "APPROVE" if approve else "REJECT"
+            print(f"EXECAI voting {vote_type} on proposal {proposal.get('id')} ({proposal.get('pubkey')})")
+
+            # Load keypair
+            with open(self.keypair_path, 'r') as f:
+                secret = bytes(json.load(f))
+            kp = Keypair.from_secret_key(secret)
+
+            # Build vote instruction using Anchor discriminator from IDL (vote)
+            disc = bytes([227,110,155,23,136,126,172,25])
+            data = disc + (b"\x01" if approve else b"\x00")
+
+            proposal_pk = PublicKey(proposal.get('pubkey')) if proposal.get('pubkey') else PublicKey(proposal.get('id'))
+            vote_record_kp = Keypair()
+
+            keys = [
+                AccountMeta(pubkey=proposal_pk, is_signer=False, is_writable=True),
+                AccountMeta(pubkey=vote_record_kp.public_key, is_signer=True, is_writable=True),
+                AccountMeta(pubkey=kp.public_key, is_signer=True, is_writable=True),
+                AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
+            ]
+            ix = TransactionInstruction(keys=keys, program_id=PublicKey(self.governance_program_id), data=data)
+            tx = Transaction().add(ix)
+
+            client = Client(json.load(open('config.json')).get('rpc_url', 'https://api.devnet.solana.com'))
+            resp = client.send_transaction(tx, kp, vote_record_kp)
+            if resp.get('result') or resp.get('signature') or resp.get('result', {}).get('txid'):
+                print("Vote transaction sent:", resp)
+                return True
+            else:
+                print("Vote submission response:", resp)
+                return False
+        except Exception as e:
+            print("Vote failed:", e)
+            return False
     
     def log_action(self, action: str) -> bool:
         """Log an action for transparency
@@ -152,12 +168,9 @@ class ExecAIClient:
             decision = self.evaluate_proposal(proposal)
             
             # Submit vote
-            if self.vote_on_proposal(proposal_id, decision):
-                # Log the action
+            if self.vote_on_proposal(proposal, decision):
                 action = f"Voted {'APPROVE' if decision else 'REJECT'} on proposal {proposal_id}"
                 self.log_action(action)
-                
-                # Mark as voted in our local cache
                 proposal["voted_by_execai"] = True
                 
         # Save updated proposals
@@ -215,9 +228,6 @@ def main():
     
     # Process proposals once
     client.process_proposals()
-    
-    # In a real implementation, we would poll for new proposals
-    # For now, we'll just exit
     print("EXECAI client finished")
 
 if __name__ == "__main__":

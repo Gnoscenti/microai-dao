@@ -14,7 +14,7 @@ function parseGovernanceAccount(account: AccountInfo<Buffer> | null) {
   if (!account) return null;
   
   try {
-    // Basic parsing - would need to match your Rust struct layout
+    // Parse DAO account with Wyoming compliance fields
     const data = account.data;
     // Skip discriminator (8 bytes)
     let offset = 8;
@@ -29,11 +29,22 @@ function parseGovernanceAccount(account: AccountInfo<Buffer> | null) {
     
     // Read member_count (8 bytes) 
     const memberCount = data.readBigUInt64LE(offset);
+    offset += 8;
+    
+    // Read Wyoming compliance fields
+    // Note: String parsing in Solana requires careful handling of length prefixes
+    // This is a simplified version - you may need to adjust based on actual serialization
+    const legalNameLength = data.readUInt32LE(offset);
+    offset += 4;
+    const legalName = data.slice(offset, offset + legalNameLength).toString('utf8');
+    offset += legalNameLength;
     
     return {
       authority: authority.toString(),
       proposalCount: Number(proposalCount),
-      memberCount: Number(memberCount)
+      memberCount: Number(memberCount),
+      legalName,
+      // Add other Wyoming fields as needed
     };
   } catch (e) {
     console.error('Error parsing governance account:', e);

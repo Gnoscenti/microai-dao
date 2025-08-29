@@ -6,11 +6,22 @@ declare_id!("GwTF9DgiBrj8ezeJQNdubiTb4s3xmmXybHPCy3xgoHyJ");
 pub mod governance {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    pub fn initialize(
+        ctx: Context<Initialize>, 
+        legal_name: String,
+        registered_agent_address: String,
+        principal_place_of_business: String,
+    ) -> Result<()> {
         let dao = &mut ctx.accounts.dao;
         dao.authority = ctx.accounts.authority.key();
         dao.proposal_count = 0;
         dao.member_count = 0;
+        dao.legal_name = legal_name;
+        dao.registered_agent_address = registered_agent_address;
+        dao.principal_place_of_business = principal_place_of_business;
+        dao.formation_date = Clock::get()?.unix_timestamp;
+        dao.jurisdiction = "Wyoming".to_string();
+        dao.entity_type = "DAO LLC".to_string();
         Ok(())
     }
 
@@ -61,7 +72,7 @@ pub mod governance {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, payer = authority, space = 8 + 32 + 8 + 8)]
+    #[account(init, payer = authority, space = 8 + 32 + 8 + 8 + 256 + 512 + 512 + 8 + 64 + 64)]
     pub dao: Account<'info, Dao>,
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -95,6 +106,13 @@ pub struct Dao {
     pub authority: Pubkey,
     pub proposal_count: u64,
     pub member_count: u64,
+    // Wyoming DAO LLC Compliance Fields
+    pub legal_name: String,
+    pub registered_agent_address: String,
+    pub principal_place_of_business: String,
+    pub formation_date: i64,
+    pub jurisdiction: String,
+    pub entity_type: String,
 }
 
 #[account]

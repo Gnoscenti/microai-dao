@@ -17,6 +17,9 @@ pub mod membership {
         ctx: Context<AddMember>,
         member_type: MemberType,
         voting_power: u64,
+        legal_name: String,
+        address: String,
+        tax_id: String,
     ) -> Result<()> {
         let registry = &mut ctx.accounts.registry;
         let member = &mut ctx.accounts.member;
@@ -26,6 +29,11 @@ pub mod membership {
         member.voting_power = voting_power;
         member.joined_at = Clock::get()?.unix_timestamp;
         member.is_active = true;
+        // Wyoming DAO compliance fields
+        member.legal_name = legal_name;
+        member.address = address;
+        member.tax_id = tax_id;
+        member.kyc_verified = false; // Requires separate verification process
 
         registry.member_count += 1;
 
@@ -46,7 +54,7 @@ pub struct Initialize<'info> {
 pub struct AddMember<'info> {
     #[account(mut)]
     pub registry: Account<'info, MemberRegistry>,
-    #[account(init, payer = authority, space = 8 + 32 + 1 + 8 + 8 + 1)]
+    #[account(init, payer = authority, space = 8 + 32 + 1 + 8 + 8 + 1 + 256 + 512 + 64 + 1)]
     pub member: Account<'info, Member>,
     /// CHECK: Member pubkey is validated by the program logic
     pub member_pubkey: AccountInfo<'info>,
@@ -68,6 +76,11 @@ pub struct Member {
     pub voting_power: u64,
     pub joined_at: i64,
     pub is_active: bool,
+    // Wyoming DAO LLC Compliance Fields
+    pub legal_name: String,
+    pub address: String,
+    pub tax_id: String, // SSN for individuals, EIN for entities
+    pub kyc_verified: bool,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]

@@ -15,6 +15,7 @@ import { Activity, Zap, Lock, Shield, Coins, Vote, Users, Bot, Clock, Link as Li
 import { CONFIG } from "@/lib/config";
 import { getChainStats, getTreasuryUSD, getProposals, getEngagement, getSecurityPosture } from "@/lib/data";
 import type { Proposal } from "@/lib/types";
+import WyomingRegistration from "@/components/WyomingRegistration";
 
 const range = (n:number) => Array.from({ length: n }, (_, i) => i);
 const makeSeries = (points = 24, start = 100, jitter = 8) => {
@@ -42,6 +43,7 @@ const aiBlurbs = [
 ];
 
 export default function App(){
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'wyoming'>('dashboard');
   const [now, setNow] = useState(new Date());
   const [tps, setTps] = useState<number>(0);
   const [chainStats, setChainStats] = useState<{blockHeight?:number; finalityMs?:number; peers?:number}>({});
@@ -152,6 +154,22 @@ export default function App(){
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden md:block"><ClockTile /></div>
+            <div className="flex gap-2">
+              <Button 
+                variant={activeTab === 'dashboard' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveTab('dashboard')}
+              >
+                Dashboard
+              </Button>
+              <Button 
+                variant={activeTab === 'wyoming' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveTab('wyoming')}
+              >
+                Wyoming LLC
+              </Button>
+            </div>
             <Badge className="gap-1 bg-emerald-600"><Zap className="h-3 w-3"/> {tps || 1200} TPS</Badge>
             <Badge className="gap-1 border border-cyan-500/40 text-cyan-300"><Shield className="h-3 w-3"/> Timelock: {Math.round(CONFIG.TIMELOCK_SECONDS/3600)}h</Badge>
             <Button><Vote className="h-4 w-4 mr-1"/> Enter Vote</Button>
@@ -159,6 +177,10 @@ export default function App(){
         </div>
       </header>
 
+      {activeTab === 'wyoming' ? (
+        <WyomingRegistration />
+      ) : (
+        <>
       <section className="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardContent>
           <div className="flex items-center justify-between"><div className="text-xs text-zinc-400">Treasury</div><Coins className="h-4 w-4"/></div>
@@ -393,6 +415,8 @@ export default function App(){
           </CardContent>
         </Card>
       </section>
+        </>
+      )}
 
       <footer className="border-t border-white/5 py-8 text-center text-xs text-zinc-400">© {new Date().getFullYear()} MicroAI Studios — Dashboard.</footer>
     </div>

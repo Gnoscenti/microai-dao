@@ -1026,6 +1026,7 @@ def main():
     parser.add_argument("--track", metavar="VIDEO_ID", help="Track performance of a video")
     parser.add_argument("--optimize", action="store_true", help="Optimize future content based on performance")
     parser.add_argument("--schedule", action="store_true", help="Schedule content creation")
+    parser.add_argument("--auto", action="store_true", help="Run in automated mode")
     
     args = parser.parse_args()
     
@@ -1078,6 +1079,19 @@ def main():
             if optimization:
                 print(json.dumps(optimization, indent=2))
             
+        elif args.auto:
+            # Run in automated mode - same as create but with automated settings
+            log("Running in automated mode...")
+            CONFIG["auto_upload"] = True
+            CONFIG["auto_schedule"] = True
+            
+            # Authenticate with YouTube
+            if CONFIG["auto_upload"]:
+                authenticate_youtube()
+            
+            # Create content
+            create_content()
+
         elif args.schedule:
             # Schedule content creation
             log("Scheduling content creation...")

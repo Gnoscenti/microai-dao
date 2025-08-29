@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/ui/badge.tsx","./src/components/ui/button.tsx","./src/components/ui/card.tsx","./src/components/ui/progress.tsx","./src/components/ui/separator.tsx","./src/lib/config.ts","./src/lib/data-backup.ts","./src/lib/data.ts","./src/lib/mock.ts","./src/lib/types.ts"],"version":"5.9.2"}

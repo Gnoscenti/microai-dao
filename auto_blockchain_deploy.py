@@ -35,7 +35,7 @@ CONFIG = {
     "project_dir": os.path.expanduser("~/microai-dao"),
     "governance_dir": "programs/governance",
     "membership_dir": "programs/membership",
-    "log_file": "blockchain_deploy.log",
+    "log_file": "/home/microai/microai-dao/blockchain_deploy.log",
     "auto_airdrop": True,
     "min_sol_balance": 2.0,
     "check_interval": 60,  # seconds

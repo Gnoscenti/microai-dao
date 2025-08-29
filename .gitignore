@@ -60,3 +60,10 @@ proposals.json
 *.dylib
 *.dll
 
+# Node.js
+node_modules/
+*.env
+.env.local
+microai-dashboard/dist/
+microai-dashboard/node_modules/
+
